@@ -11,16 +11,32 @@ const TRADING_PAIRS = [
   { symbol: 'DOGE/USDT', wsSymbol: 'dogeusdt' }
 ];
 
+interface SpreadData {
+  time: string;
+  spread: number;
+}
+
+interface OrderData {
+  price: string;
+  amount: string;
+  total: number;
+}
+
+interface ImbalanceData {
+  time: string;
+  imbalance: number;
+}
+
 const OrderBook = () => {
   const [selectedPair, setSelectedPair] = useState(TRADING_PAIRS[0]);
-  const [orderbook, setOrderbook] = useState({ bids: [], asks: [] });
-  const [spreadHistory, setSpreadHistory] = useState([]);
-  const [imbalanceHistory, setImbalanceHistory] = useState([]);
+  const [orderbook, setOrderbook] = useState<{ bids: OrderData[], asks: OrderData[] }>({ bids: [], asks: [] });
+  const [spreadHistory, setSpreadHistory] = useState<SpreadData[]>([]);
+  const [imbalanceHistory, setImbalanceHistory] = useState<ImbalanceData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [ws, setWs] = useState(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(false);
 
-  const handlePairChange = (pair) => {
+  const handlePairChange = (pair: typeof TRADING_PAIRS[0]) => {
     setIsLoading(true);
  
     setOrderbook({ bids: [], asks: [] });
@@ -54,12 +70,12 @@ const OrderBook = () => {
             
          
             const formattedData = {
-              bids: data.bids.map(bid => ({
+              bids: data.bids.map((bid: [string, string]) => ({
                 price: parseFloat(bid[0]).toFixed(2),
                 amount: parseFloat(bid[1]).toFixed(4),
                 total: 0
               })),
-              asks: data.asks.map(ask => ({
+              asks: data.asks.map((ask: [string, string]) => ({
                 price: parseFloat(ask[0]).toFixed(2),
                 amount: parseFloat(ask[1]).toFixed(4),
                 total: 0
@@ -67,12 +83,12 @@ const OrderBook = () => {
             };
 
            
-            formattedData.bids.reduce((acc, bid) => {
+            formattedData.bids.reduce((acc: number, bid: { amount: string; total: number }) => {
               bid.total = (acc + parseFloat(bid.amount));
               return bid.total;
             }, 0);
             
-            formattedData.asks.reduce((acc, ask) => {
+            formattedData.asks.reduce((acc: number, ask: { amount: string; total: number }) => {
               ask.total = (acc + parseFloat(ask.amount));
               return ask.total;
             }, 0);
@@ -99,8 +115,8 @@ const OrderBook = () => {
             }
 
      
-            const bidTotal = formattedData.bids.reduce((acc, bid) => acc + parseFloat(bid.amount), 0);
-            const askTotal = formattedData.asks.reduce((acc, ask) => acc + parseFloat(ask.amount), 0);
+            const bidTotal = formattedData.bids.reduce((acc: number, bid: { amount: string }) => acc + parseFloat(bid.amount), 0);
+            const askTotal = formattedData.asks.reduce((acc: number, ask: { amount: string }) => acc + parseFloat(ask.amount), 0);
             const imbalance = (bidTotal - askTotal) / (bidTotal + askTotal);
             setImbalanceHistory(prev => {
               const newHistory = [...prev, {
@@ -273,7 +289,7 @@ const OrderBook = () => {
                       }}
                       labelStyle={{ color: '#9ca3af' }}
                       itemStyle={{ color: '#9ca3af' }}
-                      formatter={(value) => [`${parseFloat(value).toFixed(4)}%`, 'Spread']}
+                      formatter={(value: number) => [`${value.toFixed(4)}%`, 'Spread']}
                     />
                     <Line 
                       type="monotone" 
@@ -309,7 +325,7 @@ const OrderBook = () => {
                       }}
                       labelStyle={{ color: '#9ca3af' }}
                       itemStyle={{ color: '#9ca3af' }}
-                      formatter={(value) => [`${(value * 100).toFixed(2)}%`, 'Imbalance']}
+                      formatter={(value: number) => [`${(value * 100).toFixed(2)}%`, 'Imbalance']}
                     />
                     <Line 
                       type="monotone" 
